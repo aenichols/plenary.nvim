@@ -50,7 +50,12 @@ filetype.add_file = function(filename)
   end
 end
 
-local filename_regex = "[^" .. os_sep .. "].*"
+local path_delim = os_sep
+if Path.path.is_windows_os == true then
+  path_delim = "(\\|/)"
+end
+
+local filename_regex = "[^" .. path_delim .. "].*"
 filetype._get_extension_parts = function(filename)
   local current_match = filename:match(filename_regex)
   local possibilities = {}
@@ -120,7 +125,11 @@ end
 
 filetype.detect_from_name = function(filepath)
   filepath = filepath:lower()
-  local split_path = vim.split(filepath, os_sep, true)
+  local path_delim = os_sep
+  if Path.path.is_windows_os == true then
+    path_delim = "[\\|/]"
+  end
+  local split_path = vim.split(filepath, path_delim, true)
   local fname = split_path[#split_path]
   local match = filetype_table.file_name[fname]
   if match then

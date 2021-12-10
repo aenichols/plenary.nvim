@@ -319,7 +319,7 @@ local gen_date = (function()
 end)()
 
 local get_username = (function()
-  if jit and os_sep ~= "\\" then
+  if jit and Path.path.is_windows_os == false then
     local ffi = require "ffi"
     ffi.cdef [[
       typedef unsigned int __uid_t;
@@ -369,7 +369,7 @@ local get_username = (function()
 end)()
 
 local get_groupname = (function()
-  if jit and os_sep ~= "\\" then
+  if jit and Path.path.is_windows_os == false then
     local ffi = require "ffi"
     ffi.cdef [[
       typedef unsigned int __gid_t;
@@ -446,8 +446,8 @@ local gen_ls = function(data, path, opts)
 
   local results, sections = {}, {}
 
-  local users_tbl = os_sep ~= "\\" and {} or nil
-  local groups_tbl = os_sep ~= "\\" and {} or nil
+  local users_tbl = Path.path.is_windows_os == false and {} or nil
+  local groups_tbl = Path.path.is_windows_os == false and {} or nil
 
   local stats, permissions_cache = {}, {}
   for _, v in ipairs(data) do

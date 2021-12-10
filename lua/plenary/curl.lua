@@ -70,8 +70,9 @@ util.gen_dump_path = function()
     local v = (l == "x") and math.random(0, 0xf) or math.random(0, 0xb)
     return string.format("%x", v)
   end)
-  if P.path.sep == "\\" then
+  if P.path.is_windows_os then
     path = string.format("%s\\AppData\\Local\\Temp\\plenary_curl_%s.headers", os.getenv "USERPROFILE", id)
+    path = string.gsub(path, "\\", P.path.sep)
   else
     path = "/tmp/plenary_curl_" .. id .. ".headers"
   end

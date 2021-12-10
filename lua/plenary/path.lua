@@ -18,28 +18,36 @@ local S_IF = {
 local path = {}
 path.home = vim.loop.os_homedir()
 
-path.sep = (function()
+path.is_windows_os = (function()
   if jit then
     local os = string.lower(jit.os)
     if os == "linux" or os == "osx" or os == "bsd" then
-      return "/"
+      return false
     else
-      return "\\"
+      return true
     end
+  end
+
+  return false
+end)()
+
+path.sep = (function()
+  if path.is_windows_os == true or vim.api.nvim_eval('exists("+shellslash")') then
+    return "/"
   else
-    return package.config:sub(1, 1)
+    return "\\"
   end
 end)()
 
 path.root = (function()
-  if path.sep == "/" then
+  if path.is_windows_os == false then
     return function()
       return "/"
     end
   else
     return function(base)
       base = base or vim.loop.cwd()
-      return base:sub(1, 1) .. ":\\"
+      return base:sub(1, 1) .. ":" .. path.sep
     end
   end
 end)()
@@ -55,13 +63,17 @@ local concat_paths = function(...)
 end
 
 local function is_root(pathname)
-  if path.sep == "\\" then
-    return string.match(pathname, "^[A-Z]:\\?$")
+  if path.is_windows_os then
+    return string.match(pathname, "^[A-Z]:[\\|/]?$")
   end
   return pathname == "/"
 end
 
 local _split_by_separator = (function()
+  local delim = path.sep
+  if path.is_windows_os then
+    delim = "[\\|/]"
+  end
   local formatted = string.format("([^%s]+)", path.sep)
   return function(filepath)
     local t = {}
@@ -76,11 +88,11 @@ local is_uri = function(filename)
   return string.match(filename, "^%w+://") ~= nil
 end
 
-local is_absolute = function(filename, sep)
-  if sep == "\\" then
-    return string.match(filename, "^[A-Z]:\\.*$")
+local is_absolute = function(filename, is_windows)
+  if is_windows then
+    return string.match(filename, "^[A-Z]:[\\|/].*$")
   end
-  return string.sub(filename, 1, 1) == sep
+  return string.sub(filename, 1, 1) == "/"
 end
 
 local function _normalize_path(filename, cwd)
@@ -115,7 +127,7 @@ local function _normalize_path(filename, cwd)
     until idx > #parts
 
     local prefix = ""
-    if is_absolute(filename, path.sep) or #_split_by_separator(cwd) == initial_up_count then
+    if is_absolute(filename, path.is_windows_os) or #_split_by_separator(cwd) == initial_up_count then
       prefix = path.root(filename)
     end
 
@@ -393,7 +405,7 @@ local function shorten_len(filename, len, exclude)
 end
 
 local shorten = (function()
-  if jit and path.sep ~= "\\" then
+  if jit and path.is_windows_os == false then
     local ffi = require "ffi"
     ffi.cdef [[
     typedef unsigned char char_u;
